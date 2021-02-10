@@ -4,6 +4,8 @@
 2. [API ergast](#ergast)
 3. [Añadir la fuente de tados de la API y de las temporadas](#data-source)
 4. [Definición del schema](#schema)
+5. [Lista de temporadas](#season-list)
+6. [Solucionar problema de valores nulos](#null-values)
 
 
 <hr>
@@ -208,6 +210,105 @@ type Season {
 
 <hr>
 
+<a name="season-list"></a>
+
+## 4. Lista de temporadas
+
+En la fuente de datos creamos una función asíncrona para obtener los datos de la API Rest:
+
+~~~js
+export class SeasonsData extends F1 {
+...
+  async getSeasons() {
+    return await this.get('seasons.json', {
+      cacheOptions: { ttl: 60 }
+    });
+  }
+}
+~~~
+
+En el resolver de Queries creamos la consulta que llamaŕa a ese resolver y que obtendrá los datos:
+
+~~~js
+import { IResolvers } from 'graphql-tools';
+
+const query: IResolvers = {
+  Query: {
+    async seasonList(_: void, __: any, { dataSources }) {
+      return await dataSources.seasons
+        .getSeasons()
+        .then((data: any) => data.MRData.SeasonTable.Seasons);
+    },
+  },
+};
+
+export default query;
+~~~
+
+> Por ahora la llamada a la API de GraphQL para consultar las temporadas generará un error en aquellas keys que no se correspondan (sólo funciona *url*). Esto lo resolveremos en la siguiente sección.
+
+<hr>
+
+<a name="null-value"></a>
+
+## 6. Solucionar problema de valores nulos
+
+Ahora mismo tenemos en nuestra api de GraphQL dos keys que no tienen correspondencia en la API Rest (year y urlMobile).
+
+Para solventar este problema, creamos el archivo *src/resolvers/type.ts*.
+
+~~~js
+import { IResolvers } from 'graphql-tools';
+
+const type: IResolvers = {
+  Season: {
+    year: parent => parent.season,
+    urlMobile: parent => parent.url
+  }
+};
+
+export default type;
+~~~
+
+De este modo, estamos pasando a la key year lo que viene en la key season en la API Rest, y a urlMobile lo que vienen en la key url.
+
+Para obtener la urlMobile correcta, creamos un archivo *src/lib/utils.ts*.
+
+~~~js
+export function getWikipediaMobileUrl(url: string) {
+  return (url  !== undefined) 
+    ? url.replace('wikipedia', 'm.wikipedia')
+    : ''
+}
+~~~
+
+Utilizamos esta función en el resolver de types:
+
+~~~js
+import { getWikipediaMobileUrl } from '../lib/utils';
+...
+    urlMobile: parent => getWikipediaMobileUrl(parent.url)
+...
+~~~
+
+Finalmente importamos el tipo definido al **resolverMap**, que quedaría como sigue:
+
+~~~js
+import { IResolvers } from 'graphql-tools';
+import query from './query';
+import type from './type';
+
+const resolvers : IResolvers = {
+    ...query,
+    ...type
+};
+
+export default resolvers;
+~~~
+
+
+<hr>
+
 <a name="init"></a>
 
-## 1. Crear el proyecto desde el generador
+## 6. Solucionar problema de valores nulos
