@@ -1,7 +1,10 @@
 # Api en GraphQL haciendo uso de una API REST
 
 1. [Crear el proyecto desde el generador](#init)
-2. [API ergast](#init)
+2. [API ergast](#ergast)
+3. [Añadir la fuente de tados de la API y de las temporadas](#data-source)
+4. [Definición del schema](#schema)
+
 
 <hr>
 
@@ -121,8 +124,87 @@ Para realizar este proyecto vamos a basarnos en la api ergast de Fórmula 1 [lin
 
   - API: http://ergast.com/api/f1/drivers/<ID_DRIVER>/driverStandings.json
 
+<hr>
 
+<a name="data-source"></a>
 
+## 3. Añadir la fuente de tados de la API y de las temporadas
+
+Creamos la carpeta *src/data* y en ella los siguientes archivos:
+
+- *data-source-ts*:
+
+~~~js
+import { RESTDataSource } from "apollo-datasource-rest";
+
+export class F1 extends RESTDataSource {
+  constructor() {
+    super();
+    this.baseURL = 'https://ergast.com/api/f1/'
+  }
+}
+~~~
+
+- *data-seasons.ts*:
+
+~~~js
+import { F1 } from './data-source';
+
+export class SeasonsData extends F1 {
+  constructor() {
+    super();
+  }
+}
+~~~
+
+- *index.ts*:
+
+~~~js
+import { SeasonsData } from './data-seasons';
+
+export const dataSources = {
+  SeasonsData,
+}
+~~~
+
+En el archivo server.ts añadimos el dataSource a ka configuración de ApolloServer:
+
+~~~js
+...
+import { dataSources } from './data/index';
+...
+  const server = new ApolloServer({
+      schema,
+      dataSources: () => ({
+          seasons: new dataSources.SeasonsData()
+      }),
+      introspection: true // Necesario
+  });
+~~~
+
+> modificamos la configuración de cors que viene por defecto a ```app.use(cors());```
+
+<hr>
+
+<a name="schema"></a>
+
+## 4. Definición del schema
+
+> En este paso se puede hacer uso de la web [json to ts](http://www.jsontots.com/) que dado un json nos define las distintas interfaces, de forma que podamos *"traducir"* estas interfaces en definiciones de schema.
+
+El *squema.graphql* quedaría como sigue:
+
+~~~graphql
+type Query {
+    seasonList: [Season!]!
+}
+
+type Season {
+    year: String!;
+    url: String!;
+    urlMobile: String!;
+}
+~~~
 
 <hr>
 

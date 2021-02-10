@@ -6,19 +6,23 @@ import schema from './schema';
 import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
 import expressPlayGround from 'graphql-playground-middleware-express';
+import { dataSources } from './data/index';
 
 async function init() {
     // Inicializamos la aplicación express
     const app = express();
 
     // Añadimos configuración de Cors y compression
-    app.use('*', cors());
+    app.use(cors());
 
     app.use(compression());
 
     // Inicializamos el servidor de Apollo
     const server = new ApolloServer({
         schema,
+        dataSources: () => ({
+            seasons: new dataSources.SeasonsData()
+        }),
         introspection: true // Necesario
     });
 
