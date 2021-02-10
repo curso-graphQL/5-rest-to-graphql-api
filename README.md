@@ -67,7 +67,7 @@ Para realizar este proyecto vamos a basarnos en la api ergast de Fórmula 1 [lin
 
   - API: https://ergast.com/api/f1/drivers/<driverId>.json
 
-- ## Temporadas
+- ### Temporadas
 
   **Temporadas de la historia - Todos:**
 
@@ -75,7 +75,7 @@ Para realizar este proyecto vamos a basarnos en la api ergast de Fórmula 1 [lin
 
   - API: https://ergast.com/api/f1/seasons.json?limit=100
 
-- ## Circuitos
+- ### Circuitos
 
   **Circuitos de la historia - Todos:**
 
@@ -95,7 +95,7 @@ Para realizar este proyecto vamos a basarnos en la api ergast de Fórmula 1 [lin
 
   - API: https://ergast.com/api/f1/circuits/<circuitId>.json
 
-- ## Estadísticas
+- ### Estadísticas
 
   **Clasificación de la temporada - Pilotos:**
 
