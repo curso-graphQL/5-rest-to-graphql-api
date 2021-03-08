@@ -1,9 +1,34 @@
 type Query {
     seasonList: [Season!]!
+    racesByYear(year: String!): [Race!]!
 }
 
 type Season {
     year: String!
     url: String!
     urlMobile: String!
+}
+
+type Race {
+    season: String!
+    round: String!
+    url: String!
+    raceName: String!
+    circuit: Circuit!
+    date: String!
+    time: String!
+}
+
+type Circuit {
+    id: String!
+    url: String!
+    name: String!
+    location: Location!
+}
+
+type Location {
+    lat: String!
+    lng: String!
+    locality: String!
+    country: String!
 }

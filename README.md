@@ -6,7 +6,9 @@
 4. [Definición del schema](#schema)
 5. [Lista de temporadas](#season-list)
 6. [Solucionar problema de valores nulos](#null-values)
-
+7. [Lista de carreras de una temporada: preparativos](#races-list1)
+8. [Lista de carreras de una temporada: definición del schema](#races-list2)
+9. [Lista de carreras de un año seleccionado](#races-list3)
 
 <hr>
 
@@ -169,7 +171,7 @@ export const dataSources = {
 }
 ~~~
 
-En el archivo server.ts añadimos el dataSource a ka configuración de ApolloServer:
+En el archivo server.ts añadimos el dataSource a la configuración de ApolloServer:
 
 ~~~js
 ...
@@ -194,7 +196,7 @@ import { dataSources } from './data/index';
 
 > En este paso se puede hacer uso de la web [json to ts](http://www.jsontots.com/) que dado un json nos define las distintas interfaces, de forma que podamos *"traducir"* estas interfaces en definiciones de schema.
 
-El *squema.graphql* quedaría como sigue:
+El *schema.graphql* quedaría como sigue:
 
 ~~~graphql
 type Query {
@@ -309,6 +311,125 @@ export default resolvers;
 
 <hr>
 
-<a name="init"></a>
+<a name="races-list1"></a>
 
-## 6. Solucionar problema de valores nulos
+## 7. Lista de carreras de una temporada
+
+Creamos un nuevo archivo en la carpeta src/data *data-races.ts*:
+
+~~~js
+import { F1 } from './data-source';
+
+export class RacesData extends F1 {
+  constructor() {
+    super();
+  }
+}
+~~~
+
+y lo importamos en el index...
+
+~~~js
+import { SeasonsData } from './data-seasons';
+import { RacesData } from './data-races';
+
+export const dataSources = {
+  SeasonsData,
+  RacesData
+}
+~~~
+
+Añadimos la nueva fuente de datos al *server.ts*:
+
+~~~js
+...
+    const server = new ApolloServer({
+        schema,
+        dataSources: () => ({
+            seasons: new dataSources.SeasonsData(),
+            races: new dataSources.RacesData()
+        }),
+        introspection: true // Necesario
+    });
+...
+~~~
+
+
+<hr>
+
+<a name="races-list2"></a>
+
+## 8. Lista de carreras de una temporada: definición del schema
+
+Valiénonos de la API y de "json to ts" podemos generar en el *schema.graphql* los nuevos tipos:
+
+~~~graphql
+type Race {
+    season: String!
+    round: String!
+    url: String!
+    raceName: String!
+    circuit: Circuit!
+    date: String!
+    time: String!
+}
+
+type Circuit {
+    id: String!
+    url: String!
+    name: String!
+    location: Location!
+}
+
+type Location {
+    lat: String!
+    lng: String!
+    locality: String!
+    country: String!
+}
+~~~
+
+
+<hr>
+
+<a name="races-list3"></a>
+
+## 9. Lista de carreras de un año seleccionado
+
+Definimos en el *schema.graphql* la nueva query:
+
+~~~graphql
+type Query {
+    seasonList: [Season!]!
+    racesByYear(year: String!): [Race!]!
+}
+~~~
+
+En la fuente de datos definimos la función que hará la petición a la api:
+
+~~~js
+  async getRacesByYear(year: string) {
+    const currentYear = new Date().getFullYear()
+    if (isNaN(+year) || +year < 1950 || +year > currentYear) {
+      year = String(currentYear)
+    }
+    return await this.get(`${ year }.json`, {
+      cacheOptions: { ttl: 60 }
+    });
+  }
+~~~
+> Incluimos una validación para el caso en el que se mande un año no numérico, anteriores a 1950 o posteriores al año actual.
+
+En el resolver creamos la query correspondiente:
+
+~~~js
+Query: {
+  ...
+      async racesByYear(_: void, { year }, { dataSources }) {
+      return await dataSources.races
+        .getRacesByYear(year)
+        .then((data: any) => data.MRData.RaceTable.Races);
+    }
+  ...
+}
+~~~
